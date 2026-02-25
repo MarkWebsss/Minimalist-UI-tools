@@ -501,19 +501,79 @@
     margin: 0 auto;
   }
 
-  .footer-logo {
-    font-family: 'Instrument Serif', serif;
-    font-size: 18px;
-    font-style: italic;
-    color: var(--ink2);
-    text-decoration: none;
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 40px 40px;
+    background: var(--paper);
   }
 
-  .footer-logo span { color: var(--accent); }
+  .footer-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
 
-  .footer-note {
+  .footer-logo-wrap {
+    text-decoration: none;
+    display: block;
+    transition: opacity 0.15s;
+  }
+
+  .footer-logo-wrap:hover { opacity: 0.7; }
+
+  .footer-center {
+    text-align: center;
+    flex: 1;
+  }
+
+  .footer-tagline {
     font-size: 13px;
+    color: var(--ink2);
+    margin-bottom: 4px;
+    font-style: italic;
+  }
+
+  .footer-copy {
+    font-size: 12px;
     color: var(--ink3);
+    letter-spacing: 0.03em;
+  }
+
+  .footer-copy strong {
+    color: var(--ink2);
+    font-weight: 600;
+  }
+
+  .footer-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: var(--ink3);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 100px;
+    padding: 6px 14px;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76,175,80,0.2);
+    animation: blink 2s ease infinite;
+  }
+
+  @media (max-width: 600px) {
+    footer { padding: 32px 20px; }
+    .footer-inner { flex-direction: column; align-items: center; text-align: center; }
+    .footer-center { order: -1; }
   }
 
   /* Animations */
@@ -788,11 +848,33 @@
   </div>
 </section>
 <footer>
-  <a href="#" class="footer-logo">mini<span>.</span></a>
-  <div class="footer-note">Crafted with care — free to use forever.</div>
+  <div class="footer-inner">
+    <!-- SVG Logo -->
+    <a href="#" class="footer-logo-wrap">
+      <svg width="120" height="36" viewBox="0 0 120 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- M -->
+        <text x="0" y="26" font-family="Georgia, 'Instrument Serif', serif" font-size="28" font-style="italic" fill="#18160f">mini</text>
+        <!-- Red dot -->
+        <circle cx="83" cy="10" r="5" fill="#c0392b"/>
+      </svg>
+    </a>
+
+    <div class="footer-center">
+      <div class="footer-tagline">Crafted with care — free to use forever.</div>
+      <div class="footer-copy">© <span id="copy-year"></span> <strong>MarkWebsss</strong>. All rights reserved.</div>
+    </div>
+
+    <div class="footer-badge">
+      <span class="badge-dot"></span>
+      6 tools · Always free
+    </div>
+  </div>
 </footer>
 
 <script>
+  // Auto year
+  document.getElementById('copy-year').textContent = new Date().getFullYear();
+
   // Scroll reveal with fallback
   const reveals = document.querySelectorAll('.reveal');
 
