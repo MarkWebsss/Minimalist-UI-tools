@@ -413,6 +413,28 @@
     .form-row { grid-template-columns: 1fr 1fr; }
     .add-txn-btn { grid-column: span 2; }
   }
+
+  /* Privacy mode */
+  .private .bal-amount,
+  .private .txn-amount,
+  .private #spend-pct {
+    filter: blur(8px);
+    user-select: none;
+    transition: filter 0.3s ease;
+    cursor: pointer;
+  }
+
+  .private .bal-amount:hover,
+  .private .txn-amount:hover,
+  .private #spend-pct:hover {
+    filter: blur(0px);
+  }
+
+  #privacy-btn.active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
 </style>
 </head>
 <body>
@@ -421,6 +443,7 @@
   <a href="index.html" class="topbar-logo">mini<span>.</span>budget</a>
   <div class="topbar-right">
     <select class="month-select" id="month-sel" onchange="render()"></select>
+    <button class="icon-btn" onclick="togglePrivacy()" id="privacy-btn" title="Toggle privacy">👁</button>
     <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">☀︎</button>
   </div>
 </div>
@@ -499,6 +522,17 @@
   if (localStorage.getItem('budget_theme') === 'dark') {
     document.documentElement.classList.add('dark');
     document.getElementById('theme-btn').textContent = '☽';
+  }
+
+  let privacyOn = false;
+
+  function togglePrivacy() {
+    privacyOn = !privacyOn;
+    document.body.classList.toggle('private', privacyOn);
+    const btn = document.getElementById('privacy-btn');
+    btn.textContent = privacyOn ? '🙈' : '👁';
+    btn.classList.toggle('active', privacyOn);
+    btn.title = privacyOn ? 'Show numbers' : 'Hide numbers';
   }
 
   function toggleTheme() {
