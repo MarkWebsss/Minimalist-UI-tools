@@ -559,7 +559,7 @@
     Free & open to use
   </div>
   <h1>Beautifully<br><em>minimal</em> tools</h1>
-  <p class="hero-sub">Two handcrafted UI tools designed with care — no clutter, no accounts, just what you need.</p>
+  <p class="hero-sub">Six handcrafted UI tools designed with care — no clutter, no accounts, just what you need.</p>
   <div class="hero-btns">
     <a href="#tools" class="btn btn-primary">Explore tools ↓</a>
     <a href="task-manager.html" class="btn btn-secondary">Open Task Manager</a>
@@ -793,12 +793,22 @@
 </footer>
 
 <script>
-  // Scroll reveal
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-  }, { threshold: 0.1 });
+  // Scroll reveal with fallback
+  const reveals = document.querySelectorAll('.reveal');
 
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+
+  reveals.forEach(el => observer.observe(el));
+
+  // Fallback: make all visible after 600ms regardless
+  setTimeout(() => reveals.forEach(el => el.classList.add('visible')), 600);
 </script>
 </body>
 </html>
