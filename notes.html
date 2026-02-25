@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f0e8;
+    --paper: #faf7f2;
+    --card: #fff;
+    --ink: #1c1917;
+    --ink2: #78716c;
+    --ink3: #c5bdb5;
+    --line: #e8e2d9;
+    --accent: #92400e;
+    --accent-light: rgba(146,64,14,0.08);
+    --shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+  }
+
+  html.dark {
+    --bg: #141210;
+    --paper: #1c1917;
+    --card: #242018;
+    --ink: #f5f0e8;
+    --ink2: #78716c;
+    --ink3: #44403c;
+    --line: #2c2820;
+    --accent: #d97706;
+    --accent-light: rgba(217,119,6,0.1);
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* Layout */
+  .layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    background: var(--paper);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .sidebar-head {
+    padding: 28px 20px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sidebar-title {
+    font-family: 'Lora', serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .sidebar-title em { font-style: italic; color: var(--accent); }
+
+  .note-count {
+    font-size: 12px;
+    color: var(--ink3);
+  }
+
+  .sidebar-actions {
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 8px;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-input::placeholder { color: var(--ink3); }
+  .search-input:focus { border-color: var(--accent); }
+
+  .new-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+
+  .new-btn:hover { opacity: 0.85; transform: scale(1.05); }
+
+  /* Note list */
+  .note-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .note-list::-webkit-scrollbar { width: 3px; }
+  .note-list::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+
+  .note-item {
+    padding: 12px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.12s;
+    margin-bottom: 2px;
+    border: 1.5px solid transparent;
+  }
+
+  .note-item:hover { background: var(--accent-light); }
+
+  .note-item.active {
+    background: var(--accent-light);
+    border-color: rgba(146,64,14,0.2);
+  }
+
+  html.dark .note-item.active { border-color: rgba(217,119,6,0.25); }
+
+  .note-item-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .note-item-preview {
+    font-size: 12px;
+    color: var(--ink3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .note-item-date {
+    font-size: 11px;
+    color: var(--ink3);
+  }
+
+  .note-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink3);
+  }
+
+  .note-empty-state p {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--ink2);
+  }
+
+  /* Editor */
+  .editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+
+  .editor-toolbar {
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .editor-meta {
+    font-size: 12px;
+    color: var(--ink3);
+  }
+
+  .toolbar-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .tool-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+
+  .tool-btn:hover { color: var(--ink); border-color: var(--ink3); }
+
+  .tool-btn.danger:hover { color: #ef4444; border-color: #ef4444; }
+
+  .theme-btn {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    border-radius: 6px;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.12s;
+  }
+
+  .theme-btn:hover { border-color: var(--ink3); color: var(--ink); }
+
+  .editor-title-input {
+    width: 100%;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: 'Lora', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--ink);
+    padding: 28px 32px 8px;
+    resize: none;
+  }
+
+  .editor-title-input::placeholder { color: var(--ink3); }
+
+  .editor-body {
+    flex: 1;
+    width: 100%;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: 'Lora', serif;
+    font-size: 16px;
+    line-height: 1.8;
+    color: var(--ink);
+    padding: 8px 32px 32px;
+    resize: none;
+    overflow-y: auto;
+  }
+
+  .editor-body::placeholder { color: var(--ink3); font-style: italic; }
+  .editor-body::-webkit-scrollbar { width: 3px; }
+  .editor-body::-webkit-scrollbar-thumb { background: var(--line); }
+
+  /* No note selected */
+  .no-note {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink3);
+    gap: 12px;
+  }
+
+  .no-note-icon { font-size: 40px; opacity: 0.3; }
+
+  .no-note p {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--ink2);
+  }
+
+  .no-note small { font-size: 13px; color: var(--ink3); }
+
+  /* Word count bar */
+  .word-bar {
+    padding: 8px 32px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink3);
+    display: flex;
+    gap: 16px;
+    letter-spacing: 0.04em;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .editor-title-input, .editor-body { animation: fadeIn 0.2s ease; }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    .sidebar { width: 100%; position: absolute; z-index: 10; transform: translateX(-100%); transition: transform 0.3s; }
+    .sidebar.open { transform: translateX(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-head">
+      <div class="sidebar-title"><a href="index.html" style="text-decoration:none;color:inherit">mini<em>.</em></a> Notes</div>
+      <div class="note-count" id="note-count">0 notes</div>
+    </div>
+    <div class="sidebar-actions">
+      <input class="search-input" id="search" placeholder="Search notes…" oninput="renderList()">
+      <button class="new-btn" onclick="newNote()" title="New note">+</button>
+    </div>
+    <div class="note-list" id="note-list"></div>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor" id="editor-pane">
+    <div id="no-note" class="no-note">
+      <div class="no-note-icon">📝</div>
+      <p>Select a note or create one</p>
+      <small>Click + to start writing</small>
+    </div>
+    <div id="editor-inner" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+      <div class="editor-toolbar">
+        <div class="editor-meta" id="editor-meta"></div>
+        <div class="toolbar-right">
+          <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">☀︎</button>
+          <button class="tool-btn" onclick="copyNote()">Copy</button>
+          <button class="tool-btn danger" onclick="deleteNote()">Delete</button>
+        </div>
+      </div>
+      <textarea class="editor-title-input" id="note-title" placeholder="Note title…" rows="1" oninput="autoSave()"></textarea>
+      <textarea class="editor-body" id="note-body" placeholder="Start writing…" oninput="autoSave(); updateWordCount()"></textarea>
+      <div class="word-bar" id="word-bar">0 words · 0 characters</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let notes = JSON.parse(localStorage.getItem('notes_v1') || '[]');
+  let activeId = null;
+  let saveTimer = null;
+
+  // Theme
+  const dark = localStorage.getItem('notes_theme') === 'dark';
+  if (dark) { document.documentElement.classList.add('dark'); document.getElementById('theme-btn').textContent = '☽'; }
+
+  function toggleTheme() {
+    const isDark = document.documentElement.classList.toggle('dark');
+    document.getElementById('theme-btn').textContent = isDark ? '☽' : '☀︎';
+    localStorage.setItem('notes_theme', isDark ? 'dark' : 'light');
+  }
+
+  function save() { localStorage.setItem('notes_v1', JSON.stringify(notes)); }
+
+  function newNote() {
+    const note = { id: Date.now(), title: '', body: '', updated: Date.now() };
+    notes.unshift(note);
+    save();
+    renderList();
+    openNote(note.id);
+    setTimeout(() => document.getElementById('note-title').focus(), 50);
+  }
+
+  function openNote(id) {
+    activeId = id;
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+    document.getElementById('no-note').style.display = 'none';
+    const inner = document.getElementById('editor-inner');
+    inner.style.display = 'flex';
+    document.getElementById('note-title').value = note.title;
+    document.getElementById('note-body').value = note.body;
+    updateWordCount();
+    updateMeta(note);
+    renderList();
+  }
+
+  function autoSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const note = notes.find(n => n.id === activeId);
+      if (!note) return;
+      note.title = document.getElementById('note-title').value;
+      note.body = document.getElementById('note-body').value;
+      note.updated = Date.now();
+      save();
+      renderList();
+      updateMeta(note);
+    }, 400);
+  }
+
+  function deleteNote() {
+    if (!activeId) return;
+    notes = notes.filter(n => n.id !== activeId);
+    save();
+    activeId = null;
+    document.getElementById('no-note').style.display = 'flex';
+    document.getElementById('editor-inner').style.display = 'none';
+    renderList();
+  }
+
+  function copyNote() {
+    const title = document.getElementById('note-title').value;
+    const body = document.getElementById('note-body').value;
+    navigator.clipboard.writeText((title ? title + '\n\n' : '') + body);
+    const btn = document.querySelector('.tool-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  }
+
+  function updateMeta(note) {
+    const d = new Date(note.updated);
+    document.getElementById('editor-meta').textContent = 'Last saved ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function updateWordCount() {
+    const text = document.getElementById('note-body').value;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    document.getElementById('word-bar').textContent = `${words} word${words !== 1 ? 's' : ''} · ${text.length} characters`;
+  }
+
+  function timeAgo(ts) {
+    const m = Math.floor((Date.now() - ts) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function renderList() {
+    const q = document.getElementById('search').value.toLowerCase();
+    const filtered = notes.filter(n =>
+      n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q)
+    );
+    const list = document.getElementById('note-list');
+    document.getElementById('note-count').textContent = `${notes.length} note${notes.length !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="note-empty-state"><p>${q ? 'No results.' : 'No notes yet.'}</p></div>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    filtered.sort((a, b) => b.updated - a.updated).forEach(note => {
+      const el = document.createElement('div');
+      el.className = 'note-item' + (note.id === activeId ? ' active' : '');
+      el.onclick = () => openNote(note.id);
+      el.innerHTML = `
+        <div class="note-item-title">${note.title || 'Untitled'}</div>
+        <div class="note-item-preview">${note.body || 'No content'}</div>
+        <div class="note-item-date">${timeAgo(note.updated)}</div>
+      `;
+      list.appendChild(el);
+    });
+  }
+
+  // Keyboard shortcut: Cmd/Ctrl+N for new note
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'n') { e.preventDefault(); newNote(); }
+  });
+
+  renderList();
+  if (notes.length > 0) openNote(notes[0].id);
+</script>
+</body>
+</html>

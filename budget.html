@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f4f8;
+    --paper: #fff;
+    --surface: #f8fafc;
+    --ink: #0f172a;
+    --ink2: #64748b;
+    --ink3: #cbd5e1;
+    --line: #e2e8f0;
+    --income: #10b981;
+    --income-bg: rgba(16,185,129,0.08);
+    --expense: #ef4444;
+    --expense-bg: rgba(239,68,68,0.08);
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.08);
+  }
+
+  html.dark {
+    --bg: #0a0f1a;
+    --paper: #111827;
+    --surface: #1a2234;
+    --ink: #f1f5f9;
+    --ink2: #64748b;
+    --ink3: #1e293b;
+    --line: #1e293b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0 0 80px;
+    transition: background 0.3s;
+  }
+
+  /* Top bar */
+  .topbar {
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: var(--shadow);
+  }
+
+  .topbar-logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--ink);
+    text-decoration: none;
+    letter-spacing: -0.02em;
+  }
+
+  .topbar-logo span { color: var(--income); }
+
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  .month-select {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--ink2);
+    transition: all 0.12s;
+  }
+
+  .icon-btn:hover { border-color: var(--ink3); color: var(--ink); }
+
+  /* Content */
+  .content {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 28px 20px 0;
+  }
+
+  /* Balance cards */
+  .balance-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+
+  .bal-card {
+    background: var(--paper);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    transition: background 0.3s;
+  }
+
+  .bal-card.main {
+    background: var(--ink);
+    border-color: transparent;
+    color: #fff;
+  }
+
+  html.dark .bal-card.main { background: var(--income); }
+
+  .bal-label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .bal-card.main .bal-label { color: rgba(255,255,255,0.6); }
+
+  .bal-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .bal-card.main .bal-amount { color: #fff; }
+
+  .bal-amount.income { color: var(--income); }
+  .bal-amount.expense { color: var(--expense); }
+
+  .bal-change {
+    font-size: 12px;
+    color: var(--ink3);
+    margin-top: 4px;
+  }
+
+  /* Progress bar */
+  .spend-bar-wrap {
+    background: var(--paper);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+
+  .spend-bar-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--ink2);
+    margin-bottom: 12px;
+  }
+
+  .spend-bar-top strong { color: var(--ink); }
+
+  .spend-track {
+    height: 8px;
+    background: var(--line);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .spend-fill {
+    height: 100%;
+    border-radius: 100px;
+    background: var(--income);
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+  }
+
+  /* Add transaction */
+  .add-section {
+    background: var(--paper);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+  }
+
+  .add-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+
+  .type-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .type-tab {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1.5px solid var(--line);
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--ink2);
+  }
+
+  .type-tab.income.active { background: var(--income-bg); border-color: var(--income); color: var(--income); }
+  .type-tab.expense.active { background: var(--expense-bg); border-color: var(--expense); color: var(--expense); }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 10px;
+  }
+
+  .form-input {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+
+  .form-input::placeholder { color: var(--ink3); }
+  .form-input:focus { border-color: var(--income); }
+
+  .form-select {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .add-txn-btn {
+    background: var(--ink);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .add-txn-btn:hover { opacity: 0.85; transform: scale(1.02); }
+
+  /* Transactions list */
+  .txn-section {
+    background: var(--paper);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+  }
+
+  .txn-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .txn-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .clear-btn {
+    background: none;
+    border: none;
+    font-size: 12px;
+    color: var(--ink3);
+    cursor: pointer;
+    transition: color 0.12s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .clear-btn:hover { color: var(--expense); }
+
+  .txn-group-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    font-weight: 500;
+    margin: 16px 0 8px;
+  }
+
+  .txn-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    animation: slideIn 0.2s ease both;
+  }
+
+  .txn-item:last-child { border-bottom: none; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .txn-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .txn-icon.income { background: var(--income-bg); }
+  .txn-icon.expense { background: var(--expense-bg); }
+
+  .txn-info { flex: 1; min-width: 0; }
+
+  .txn-desc {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .txn-meta {
+    font-size: 11px;
+    color: var(--ink3);
+    margin-top: 2px;
+  }
+
+  .txn-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .txn-amount.income { color: var(--income); }
+  .txn-amount.expense { color: var(--expense); }
+
+  .txn-del {
+    background: none;
+    border: none;
+    color: var(--ink3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    transition: color 0.12s;
+    opacity: 0;
+    transition: opacity 0.12s;
+  }
+
+  .txn-item:hover .txn-del { opacity: 1; }
+  .txn-del:hover { color: var(--expense); }
+
+  .empty-txn {
+    text-align: center;
+    padding: 40px;
+    color: var(--ink3);
+    font-family: 'Syne', sans-serif;
+    font-style: italic;
+    font-size: 15px;
+  }
+
+  @media (max-width: 500px) {
+    .balance-cards { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr 1fr; }
+    .add-txn-btn { grid-column: span 2; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="topbar-logo">mini<span>.</span>budget</a>
+  <div class="topbar-right">
+    <select class="month-select" id="month-sel" onchange="render()"></select>
+    <button class="icon-btn" onclick="toggleTheme()" id="theme-btn">☀︎</button>
+  </div>
+</div>
+
+<div class="content">
+  <!-- Balance cards -->
+  <div class="balance-cards">
+    <div class="bal-card main">
+      <div class="bal-label">Balance</div>
+      <div class="bal-amount" id="bal-total">₱0.00</div>
+      <div class="bal-change" id="bal-change">this month</div>
+    </div>
+    <div class="bal-card">
+      <div class="bal-label">Income</div>
+      <div class="bal-amount income" id="bal-income">₱0.00</div>
+    </div>
+    <div class="bal-card">
+      <div class="bal-label">Expenses</div>
+      <div class="bal-amount expense" id="bal-expense">₱0.00</div>
+    </div>
+  </div>
+
+  <!-- Spend bar -->
+  <div class="spend-bar-wrap">
+    <div class="spend-bar-top">
+      <span>Spending ratio</span>
+      <span><strong id="spend-pct">0%</strong> of income spent</span>
+    </div>
+    <div class="spend-track">
+      <div class="spend-fill" id="spend-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Add transaction -->
+  <div class="add-section">
+    <div class="add-title">Add Transaction</div>
+    <div class="type-tabs">
+      <button class="type-tab income active" id="tab-income" onclick="setType('income')">↑ Income</button>
+      <button class="type-tab expense" id="tab-expense" onclick="setType('expense')">↓ Expense</button>
+    </div>
+    <div class="form-row">
+      <input class="form-input" id="txn-desc" placeholder="Description…" maxlength="40">
+      <input class="form-input" id="txn-amount" type="number" placeholder="Amount" min="0" step="0.01">
+      <select class="form-select" id="txn-cat">
+        <option value="🍔 Food">🍔 Food</option>
+        <option value="🚗 Transport">🚗 Transport</option>
+        <option value="🏠 Housing">🏠 Housing</option>
+        <option value="💊 Health">💊 Health</option>
+        <option value="🎮 Entertainment">🎮 Entertainment</option>
+        <option value="💼 Work">💼 Work</option>
+        <option value="🛒 Shopping">🛒 Shopping</option>
+        <option value="📚 Education">📚 Education</option>
+        <option value="💰 Salary">💰 Salary</option>
+        <option value="📦 Other">📦 Other</option>
+      </select>
+      <button class="add-txn-btn" onclick="addTxn()">Add +</button>
+    </div>
+  </div>
+
+  <!-- Transactions -->
+  <div class="txn-section">
+    <div class="txn-head">
+      <div class="txn-title">Transactions</div>
+      <button class="clear-btn" onclick="clearAll()">Clear all</button>
+    </div>
+    <div id="txn-list"></div>
+  </div>
+</div>
+
+<script>
+  let txns = JSON.parse(localStorage.getItem('budget_v1') || '[]');
+  let txnType = 'income';
+  const CURRENCY = '₱';
+
+  // Dark mode
+  if (localStorage.getItem('budget_theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+    document.getElementById('theme-btn').textContent = '☽';
+  }
+
+  function toggleTheme() {
+    const d = document.documentElement.classList.toggle('dark');
+    document.getElementById('theme-btn').textContent = d ? '☽' : '☀︎';
+    localStorage.setItem('budget_theme', d ? 'dark' : 'light');
+  }
+
+  // Month selector
+  function buildMonthSel() {
+    const sel = document.getElementById('month-sel');
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const opt = document.createElement('option');
+      opt.value = val; opt.textContent = label;
+      if (i === 0) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+
+  function getMonth() { return document.getElementById('month-sel').value; }
+
+  function fmt(n) { return CURRENCY + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function setType(t) {
+    txnType = t;
+    document.getElementById('tab-income').classList.toggle('active', t === 'income');
+    document.getElementById('tab-expense').classList.toggle('active', t === 'expense');
+  }
+
+  function addTxn() {
+    const desc = document.getElementById('txn-desc').value.trim();
+    const amount = parseFloat(document.getElementById('txn-amount').value);
+    const cat = document.getElementById('txn-cat').value;
+    if (!desc || isNaN(amount) || amount <= 0) {
+      document.getElementById('txn-desc').focus();
+      return;
+    }
+    txns.unshift({ id: Date.now(), type: txnType, desc, amount, cat, date: Date.now() });
+    localStorage.setItem('budget_v1', JSON.stringify(txns));
+    document.getElementById('txn-desc').value = '';
+    document.getElementById('txn-amount').value = '';
+    render();
+  }
+
+  function deleteTxn(id) {
+    txns = txns.filter(t => t.id !== id);
+    localStorage.setItem('budget_v1', JSON.stringify(txns));
+    render();
+  }
+
+  function clearAll() {
+    if (!confirm('Clear all transactions?')) return;
+    txns = [];
+    localStorage.setItem('budget_v1', JSON.stringify(txns));
+    render();
+  }
+
+  function render() {
+    const month = getMonth();
+    const monthTxns = txns.filter(t => {
+      const d = new Date(t.date);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === month;
+    });
+
+    const income = monthTxns.filter(t => t.type === 'income').reduce((s,t) => s + t.amount, 0);
+    const expense = monthTxns.filter(t => t.type === 'expense').reduce((s,t) => s + t.amount, 0);
+    const balance = income - expense;
+
+    document.getElementById('bal-total').textContent = fmt(balance);
+    document.getElementById('bal-income').textContent = fmt(income);
+    document.getElementById('bal-expense').textContent = fmt(expense);
+
+    const pct = income > 0 ? Math.min(100, Math.round((expense / income) * 100)) : 0;
+    document.getElementById('spend-pct').textContent = pct + '%';
+    const fill = document.getElementById('spend-fill');
+    fill.style.width = pct + '%';
+    fill.style.background = pct > 90 ? 'var(--expense)' : pct > 60 ? '#f59e0b' : 'var(--income)';
+
+    const list = document.getElementById('txn-list');
+    if (monthTxns.length === 0) {
+      list.innerHTML = '<div class="empty-txn">No transactions this month</div>';
+      return;
+    }
+
+    // Group by date
+    const groups = {};
+    monthTxns.forEach(t => {
+      const key = new Date(t.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(t);
+    });
+
+    list.innerHTML = '';
+    Object.entries(groups).forEach(([date, items]) => {
+      const lbl = document.createElement('div');
+      lbl.className = 'txn-group-label';
+      lbl.textContent = date;
+      list.appendChild(lbl);
+
+      items.forEach(t => {
+        const el = document.createElement('div');
+        el.className = 'txn-item';
+        el.innerHTML = `
+          <div class="txn-icon ${t.type}">${t.cat.split(' ')[0]}</div>
+          <div class="txn-info">
+            <div class="txn-desc">${t.desc}</div>
+            <div class="txn-meta">${t.cat.split(' ').slice(1).join(' ')}</div>
+          </div>
+          <div class="txn-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}</div>
+          <button class="txn-del" onclick="deleteTxn(${t.id})">✕</button>
+        `;
+        list.appendChild(el);
+      });
+    });
+  }
+
+  // Enter to add
+  ['txn-desc','txn-amount'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTxn();
+    });
+  });
+
+  buildMonthSel();
+  render();
+</script>
+</body>
+</html>

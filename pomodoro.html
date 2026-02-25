@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Focus Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222;
+    --border: rgba(255,255,255,0.08);
+    --text: #f5f5f0;
+    --sub: #666;
+    --sub2: #444;
+    --focus: #ff6b35;
+    --break: #4ade80;
+    --long: #60a5fa;
+    --accent: var(--focus);
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glow {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    opacity: 0.12;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--accent);
+    transition: background 1s ease;
+  }
+
+  .nav-home {
+    position: fixed;
+    top: 24px; left: 24px;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 18px;
+    color: var(--sub);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .nav-home:hover { color: var(--text); }
+  .nav-home span { color: var(--focus); }
+
+  /* Mode tabs */
+  .modes {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-radius: 100px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    margin-bottom: 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .mode-btn {
+    background: none;
+    border: none;
+    color: var(--sub);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 8px 20px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .mode-btn.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+
+  /* Timer ring */
+  .timer-wrap {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 48px;
+  }
+
+  .ring-container {
+    position: relative;
+    width: 260px;
+    height: 260px;
+    margin-bottom: 32px;
+  }
+
+  svg.ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: var(--surface2);
+    stroke-width: 6;
+  }
+
+  .ring-progress {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 6;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.5s ease;
+    filter: drop-shadow(0 0 8px var(--accent));
+  }
+
+  .timer-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .timer-display {
+    font-family: 'Playfair Display', serif;
+    font-size: 58px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .timer-label {
+    font-size: 12px;
+    color: var(--sub);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* Session dots */
+  .session-dots {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .sdot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+
+  .sdot.done { background: var(--accent); border-color: var(--accent); }
+
+  .session-info {
+    font-size: 13px;
+    color: var(--sub);
+    letter-spacing: 0.04em;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+  }
+
+  .ctrl-btn {
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-size: 18px;
+  }
+
+  .ctrl-btn.secondary {
+    width: 48px; height: 48px;
+    background: var(--surface);
+    color: var(--sub);
+    border: 1px solid var(--border);
+    font-size: 16px;
+  }
+
+  .ctrl-btn.secondary:hover { color: var(--text); border-color: var(--sub2); }
+
+  .ctrl-btn.primary {
+    width: 68px; height: 68px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 22px;
+    box-shadow: 0 0 24px rgba(255,107,53,0.3);
+  }
+
+  .ctrl-btn.primary:hover { transform: scale(1.06); }
+  .ctrl-btn.primary:active { transform: scale(0.95); }
+
+  /* Settings */
+  .settings {
+    position: relative;
+    z-index: 1;
+    margin-top: 48px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .setting-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .setting-label {
+    font-size: 11px;
+    color: var(--sub);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .setting-val {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .setting-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--sub);
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+    line-height: 1;
+  }
+
+  .setting-btn:hover { color: var(--text); border-color: var(--sub2); }
+
+  .setting-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--text);
+    min-width: 32px;
+    text-align: center;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .timer-wrap { animation: fadeUp 0.5s ease both; }
+  .modes { animation: fadeUp 0.5s 0.05s ease both; }
+  .controls { animation: fadeUp 0.5s 0.1s ease both; }
+  .settings { animation: fadeUp 0.5s 0.15s ease both; }
+</style>
+</head>
+<body>
+
+<div class="glow" id="glow"></div>
+<a href="index.html" class="nav-home">mini<span>.</span></a>
+
+<div class="modes">
+  <button class="mode-btn active" onclick="setMode('focus')">Focus</button>
+  <button class="mode-btn" onclick="setMode('short')">Short Break</button>
+  <button class="mode-btn" onclick="setMode('long')">Long Break</button>
+</div>
+
+<div class="timer-wrap">
+  <div class="ring-container">
+    <svg class="ring" viewBox="0 0 260 260">
+      <circle class="ring-bg" cx="130" cy="130" r="118"/>
+      <circle class="ring-progress" id="ring" cx="130" cy="130" r="118"
+        stroke-dasharray="741.42"
+        stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-center">
+      <div class="timer-display" id="timer-display">25:00</div>
+      <div class="timer-label" id="timer-label">Focus time</div>
+    </div>
+  </div>
+
+  <div class="session-dots" id="session-dots"></div>
+  <div class="session-info" id="session-info">Session 1 of 4</div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn secondary" onclick="skipSession()" title="Skip">⏭</button>
+  <button class="ctrl-btn primary" id="play-btn" onclick="toggleTimer()">▶</button>
+  <button class="ctrl-btn secondary" onclick="resetTimer()" title="Reset">↺</button>
+</div>
+
+<div class="settings">
+  <div class="setting-item">
+    <div class="setting-label">Focus</div>
+    <div class="setting-val">
+      <button class="setting-btn" onclick="adjustSetting('focus', -5)">−</button>
+      <div class="setting-num" id="s-focus">25</div>
+      <button class="setting-btn" onclick="adjustSetting('focus', 5)">+</button>
+    </div>
+  </div>
+  <div class="setting-item">
+    <div class="setting-label">Short Break</div>
+    <div class="setting-val">
+      <button class="setting-btn" onclick="adjustSetting('short', -1)">−</button>
+      <div class="setting-num" id="s-short">5</div>
+      <button class="setting-btn" onclick="adjustSetting('short', 1)">+</button>
+    </div>
+  </div>
+  <div class="setting-item">
+    <div class="setting-label">Long Break</div>
+    <div class="setting-val">
+      <button class="setting-btn" onclick="adjustSetting('long', -5)">−</button>
+      <div class="setting-num" id="s-long">15</div>
+      <button class="setting-btn" onclick="adjustSetting('long', 5)">+</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CIRCUMFERENCE = 741.42;
+  const COLORS = { focus: '#ff6b35', short: '#4ade80', long: '#60a5fa' };
+  const LABELS = { focus: 'Focus time', short: 'Short break', long: 'Long break' };
+
+  let settings = { focus: 25, short: 5, long: 15 };
+  let mode = 'focus';
+  let running = false;
+  let remaining = 0;
+  let total = 0;
+  let interval = null;
+  let session = 1;
+  const SESSIONS = 4;
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.mode-btn').forEach((b, i) => {
+      b.classList.toggle('active', ['focus','short','long'][i] === m);
+    });
+    document.documentElement.style.setProperty('--accent', COLORS[m]);
+    document.getElementById('glow').style.background = COLORS[m];
+    resetTimer();
+    updateLabel();
+  }
+
+  function updateLabel() {
+    document.getElementById('timer-label').textContent = LABELS[mode];
+  }
+
+  function getMins() { return settings[mode]; }
+
+  function resetTimer() {
+    clearInterval(interval);
+    running = false;
+    total = getMins() * 60;
+    remaining = total;
+    document.getElementById('play-btn').textContent = '▶';
+    updateDisplay();
+    updateRing();
+  }
+
+  function toggleTimer() {
+    if (running) {
+      clearInterval(interval);
+      running = false;
+      document.getElementById('play-btn').textContent = '▶';
+    } else {
+      running = true;
+      document.getElementById('play-btn').textContent = '⏸';
+      interval = setInterval(tick, 1000);
+    }
+  }
+
+  function tick() {
+    remaining--;
+    if (remaining <= 0) {
+      remaining = 0;
+      clearInterval(interval);
+      running = false;
+      document.getElementById('play-btn').textContent = '▶';
+      onComplete();
+    }
+    updateDisplay();
+    updateRing();
+  }
+
+  function onComplete() {
+    if (mode === 'focus') {
+      session = Math.min(session + 1, SESSIONS + 1);
+      updateSessionDots();
+      // Auto suggest break
+      const nextMode = session > SESSIONS ? 'long' : 'short';
+      setTimeout(() => setMode(nextMode), 500);
+      if (session > SESSIONS) session = 1;
+    } else {
+      setMode('focus');
+    }
+    // Notification
+    if (Notification.permission === 'granted') {
+      new Notification('mini. Timer', { body: LABELS[mode] + ' complete!' });
+    }
+  }
+
+  function skipSession() {
+    clearInterval(interval);
+    running = false;
+    onComplete();
+  }
+
+  function updateDisplay() {
+    const m = Math.floor(remaining / 60).toString().padStart(2, '0');
+    const s = (remaining % 60).toString().padStart(2, '0');
+    document.getElementById('timer-display').textContent = `${m}:${s}`;
+    document.title = `${m}:${s} — mini.`;
+  }
+
+  function updateRing() {
+    const pct = remaining / total;
+    const offset = CIRCUMFERENCE * (1 - pct);
+    document.getElementById('ring').style.strokeDashoffset = offset;
+  }
+
+  function updateSessionDots() {
+    const dots = document.getElementById('session-dots');
+    dots.innerHTML = '';
+    for (let i = 1; i <= SESSIONS; i++) {
+      const d = document.createElement('div');
+      d.className = 'sdot' + (i < session ? ' done' : '');
+      dots.appendChild(d);
+    }
+    document.getElementById('session-info').textContent = `Session ${Math.min(session, SESSIONS)} of ${SESSIONS}`;
+  }
+
+  function adjustSetting(key, delta) {
+    settings[key] = Math.max(1, settings[key] + delta);
+    document.getElementById('s-' + key).textContent = settings[key];
+    if (mode === key) resetTimer();
+  }
+
+  // Request notification permission
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  setMode('focus');
+  updateSessionDots();
+</script>
+</body>
+</html>
